@@ -73,7 +73,7 @@ resource "aws_security_group" "master" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "10.0.0.0/16"
+      var.vpc_cidr
     ]
   }
 
@@ -84,7 +84,7 @@ resource "aws_security_group" "master" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "10.0.0.0/16"
+      var.vpc_cidr
     ]
   }
 
@@ -95,7 +95,7 @@ resource "aws_security_group" "master" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "10.0.0.0/16"
+      var.vpc_cidr
     ]
   }
 
@@ -132,7 +132,7 @@ resource "aws_security_group" "worker" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "10.0.0.0/16"
+      var.vpc_cidr
     ]
   }
 
@@ -143,7 +143,7 @@ resource "aws_security_group" "worker" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "10.0.0.0/16"
+      var.vpc_cidr
     ]
   }
 
@@ -154,7 +154,18 @@ resource "aws_security_group" "worker" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "10.0.0.0/16"
+      var.vpc_cidr
+    ]
+  }
+
+  ingress {
+
+    from_port = 8000
+    to_port   = 8000
+    protocol  = "tcp"
+
+    security_groups = [
+      aws_security_group.alb.id
     ]
   }
 

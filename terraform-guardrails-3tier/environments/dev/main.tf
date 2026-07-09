@@ -2,6 +2,10 @@ data "aws_ssm_parameter" "amazon_linux_2023_ami" {
   name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 }
 
+locals {
+  worker_user_data = file("${path.module}/../../three-tier-app/deploy/user_data.sh.tftpl")
+}
+
 module "vpc" {
 
   source = "../../modules/vpc"
@@ -66,6 +70,10 @@ module "ec2" {
 
   source = "../../modules/ec2"
 
+  depends_on = [
+    module.vpc
+  ]
+
   project_name = var.project_name
   environment  = var.environment
 
@@ -99,6 +107,9 @@ module "alb" {
     module.ec2.worker1_id,
     module.ec2.worker2_id
   ]
+
+  target_port       = 8000
+  health_check_path = "/api/health"
 }
 
 #===================WAF Module========================

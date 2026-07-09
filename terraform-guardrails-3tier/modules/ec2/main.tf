@@ -54,6 +54,9 @@ resource "aws_instance" "worker1" {
 
   key_name = var.key_name
 
+  user_data                   = var.worker_user_data
+  user_data_replace_on_change = true
+
   vpc_security_group_ids = [
     var.worker_sg
   ]
@@ -75,6 +78,9 @@ resource "aws_instance" "worker2" {
   subnet_id = var.private_subnet_ids[1]
 
   key_name = var.key_name
+
+  user_data                   = var.worker_user_data
+  user_data_replace_on_change = true
 
   vpc_security_group_ids = [
     var.worker_sg

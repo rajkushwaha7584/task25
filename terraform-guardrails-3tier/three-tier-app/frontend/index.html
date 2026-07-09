@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Three Tier Todo Skills</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Frontend + Backend + Database</p>
+          <h1>Todo and Skills Tracker</h1>
+        </div>
+        <span id="status" class="status">Checking API</span>
+      </section>
+
+      <section class="grid">
+        <article class="panel">
+          <div class="panel-header">
+            <h2>To-do List</h2>
+            <span id="todo-count">0 items</span>
+          </div>
+          <form id="todo-form" class="form-row">
+            <input id="todo-title" type="text" placeholder="Add a task" autocomplete="off" />
+            <button type="submit">Add</button>
+          </form>
+          <ul id="todo-list" class="list"></ul>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <h2>Skills</h2>
+            <span id="skill-count">0 items</span>
+          </div>
+          <form id="skill-form" class="form-row split">
+            <input id="skill-name" type="text" placeholder="Add a skill" autocomplete="off" />
+            <select id="skill-level">
+              <option>Beginner</option>
+              <option>Intermediate</option>
+              <option>Advanced</option>
+            </select>
+            <button type="submit">Add</button>
+          </form>
+          <ul id="skill-list" class="list"></ul>
+        </article>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
