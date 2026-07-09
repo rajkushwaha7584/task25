@@ -35,7 +35,8 @@ variable "worker_sg" {
 }
 
 variable "monitoring_sg" {
-  type = string
+  type    = string
+  default = null
 }
 
 variable "worker_user_data" {

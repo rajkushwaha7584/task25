@@ -1,0 +1,28 @@
+terraform apply
+        │
+        ▼
+terraform_data.guardrails
+        │
+        ▼
+Check 1
+Environment valid?
+        │
+        ▼
+Check 2
+Correct folder?
+        │
+        ▼
+Check 3
+Correct AWS Region?
+        │
+        ▼
+Check 4
+Project & Owner provided?
+        │
+ ┌──────┴──────┐
+ │             │
+All Pass     Any Fail
+ │             │
+ ▼             ▼
+Create AWS   Stop with Error
+Resources
