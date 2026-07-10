@@ -1,192 +1,665 @@
-Complete service list
-AWS services
-AWS Organizations
-AWS IAM
-AWS IAM Identity Center, if needed
-AWS Config
-AWS CloudTrail
-AWS VPC
-AWS Subnet
-AWS Internet Gateway
-AWS NAT Gateway
-AWS Route Table
-AWS Security Group
-AWS VPC Flow Logs
-Amazon EKS
-Amazon ECR
-AWS Load Balancer Controller
-Application Load Balancer
-AWS WAF
-Amazon RDS
-AWS Secrets Manager
-AWS KMS
-Amazon CloudWatch
-Amazon Route53, optional
-Kubernetes services/tools
-Namespace
-Deployment
-Service
-Ingress
-ConfigMap
-Secret
-HPA
-metrics-server
-Prometheus
-Grafana
-Alertmanager
-DevOps tools
-Terraform
-AWS CLI
-kubectl
-Helm
-Docker
-Git
-GitHub Actions or Jenkins
-tflint
-tfsec or Checkov
-OPA/Gatekeeper or Kyverno, optional
-Recommended Terraform folder structure
+# Three-Tier Application Infrastructure with AWS Guardrails using Terraform
+
+## Project Overview
+
+This project provisions a complete production-style **Three-Tier Application Infrastructure** on AWS using **Terraform** and deploys the application on **Amazon EKS**.
+
+The primary goal of this project is to demonstrate how infrastructure guardrails can be enforced while deploying cloud-native applications.
+
+The infrastructure includes:
+
+- Secure networking (VPC)
+- Amazon EKS
+- Amazon ECR
+- Amazon RDS (Private)
+- AWS WAF
+- IAM & IAM Identity Center
+- Monitoring (Prometheus, Grafana, CloudWatch)
+- Autoscaling (HPA)
+- Security Guardrails
+- Kubernetes Deployment using Helm
+
+---
+
+# Architecture
+
+```
+                   Internet
+                       │
+                Route53 (Optional)
+                       │
+                 Application Load Balancer
+                       │
+                 AWS WAF Web ACL
+                       │
+          AWS Load Balancer Controller
+                       │
+                 Kubernetes Ingress
+                       │
+        ┌──────────────┴──────────────┐
+        │                             │
+   Frontend Service             Backend Service
+        │                             │
+  Frontend Pods                 Backend Pods
+                                      │
+                              Amazon RDS (Private)
+```
+
+---
+
+# Technology Stack
+
+## Cloud Services
+
+- AWS Organizations
+- AWS IAM
+- AWS IAM Identity Center (Optional)
+- AWS Config
+- AWS CloudTrail
+- AWS VPC
+- Public & Private Subnets
+- Internet Gateway
+- NAT Gateway
+- Route Tables
+- Security Groups
+- VPC Flow Logs
+- Amazon EKS
+- Amazon ECR
+- AWS Load Balancer Controller
+- Application Load Balancer
+- AWS WAF
+- Amazon RDS
+- AWS Secrets Manager
+- AWS KMS
+- Amazon CloudWatch
+- Amazon Route53 (Optional)
+
+---
+
+## Kubernetes Components
+
+- Namespace
+- Deployment
+- Service
+- Ingress
+- ConfigMap
+- Secret
+- Horizontal Pod Autoscaler (HPA)
+- Metrics Server
+- Prometheus
+- Grafana
+- Alertmanager
+
+---
+
+## DevOps Tools
+
+- Terraform
+- AWS CLI
+- kubectl
+- Helm
+- Docker
+- Git
+- GitHub Actions / Jenkins
+- tflint
+- tfsec / Checkov
+- OPA Gatekeeper / Kyverno (Optional)
+
+---
+
+# Project Structure
+
+```
 three-tier-guardrails-terraform/
+
+├── README.md
+│
 ├── environments/
 │   ├── dev/
-│   │   ├── main.tf
 │   │   ├── provider.tf
+│   │   ├── backend.tf
 │   │   ├── variables.tf
 │   │   ├── terraform.tfvars
-│   │   └── backend.tf
+│   │   └── main.tf
 │   │
 │   └── prod/
-│       ├── main.tf
 │       ├── provider.tf
+│       ├── backend.tf
 │       ├── variables.tf
 │       ├── terraform.tfvars
-│       └── backend.tf
+│       └── main.tf
 │
 ├── modules/
 │   ├── guardrails/
+│   ├── iam/
 │   ├── vpc/
 │   ├── eks/
 │   ├── ecr/
-│   ├── waf/
 │   ├── rds/
+│   ├── waf/
 │   ├── monitoring/
-│   ├── app/
-│   └── iam/
+│   └── app/
 │
-└── README.md
-Dev and prod example
-dev/terraform.tfvars
+└── kubernetes/
+    ├── namespace/
+    ├── frontend/
+    ├── backend/
+    ├── ingress/
+    ├── hpa/
+    ├── monitoring/
+    └── secrets/
+```
+
+---
+
+# Terraform Environments
+
+## Development
+
+```hcl
 environment = "dev"
-aws_region  = "ap-south-1"
+
+aws_region = "ap-south-1"
 
 required_tags = {
   Environment = "dev"
   Project     = "three-tier-app"
   Owner       = "devops"
 }
-prod/terraform.tfvars
+```
+
+---
+
+## Production
+
+```hcl
 environment = "prod"
-aws_region  = "ap-south-1"
+
+aws_region = "ap-south-1"
 
 required_tags = {
   Environment = "prod"
   Project     = "three-tier-app"
   Owner       = "devops"
 }
-Guardrail examples you should implement
-Guardrail 1: Region guardrail
-Dev/prod should deploy only in approved AWS region.
+```
+
+---
+
+# Infrastructure Modules
+
+## Guardrails Module
+
+Responsible for implementing governance controls.
+
+Creates:
+
+- Service Control Policies (SCP)
+- AWS Config Rules
+- Required Tag Policies
+- Region Restrictions
+
+---
+
+## VPC Module
+
+Creates:
+
+- VPC
+- Public Subnets
+- Private Subnets
+- Internet Gateway
+- NAT Gateway
+- Route Tables
+- VPC Flow Logs
+- Security Groups
+
+---
+
+## IAM Module
+
+Creates:
+
+- IAM Roles
+- IAM Policies
+- EKS IAM Roles
+- OIDC Provider
+
+---
+
+## Amazon EKS Module
+
+Creates:
+
+- EKS Cluster
+- Managed Node Groups
+- OIDC Provider
+- IAM Roles
+- Security Groups
+
+---
+
+## Amazon ECR Module
+
+Creates repositories for:
+
+- Frontend Image
+- Backend Image
+
+---
+
+## Amazon RDS Module
+
+Creates:
+
+- Private RDS Instance
+- DB Subnet Group
+- Parameter Group
+- Secrets Manager Secret
+- KMS Encryption
+
+---
+
+## WAF Module
+
+Creates:
+
+- AWS WAF Web ACL
+- AWS Managed Rule Groups
+- Rate Limiting Rules
+- Association with Application Load Balancer
+
+---
+
+## Monitoring Module
+
+Deploys:
+
+- Prometheus
+- Grafana
+- Alertmanager
+- CloudWatch Integration
+- Dashboards
+- Alert Rules
+
+---
+
+# Kubernetes Deployment
+
+The application consists of:
+
+## Frontend
+
+- Deployment
+- Service
+- HPA
+
+---
+
+## Backend (Go API)
+
+- Deployment
+- Service
+- ConfigMap
+- Secret
+- HPA
+
+---
+
+## Database
+
+- Amazon RDS (Private)
+
+---
+
+## Ingress
+
+AWS Load Balancer Controller provisions an Application Load Balancer.
+
+Traffic Flow:
+
+```
+Internet
+
+↓
+
+AWS ALB
+
+↓
+
+AWS WAF
+
+↓
+
+Ingress
+
+↓
+
+Frontend Service
+
+↓
+
+Backend Service
+
+↓
+
+Amazon RDS
+```
+
+---
+
+# Guardrails Implemented
+
+## Guardrail 1 - Approved AWS Region
+
+Only approved AWS regions are allowed.
 
 Example:
 
-Allowed region = ap-south-1
-Wrong region = us-east-1
-Result = blocked
-Guardrail 2: Required tags
-Every resource must have Environment, Project, Owner tags.
-Guardrail 3: Subnet tag check
-Dev app can use only Environment=dev subnets.
-Prod app can use only Environment=prod subnets.
-Guardrail 4: DB private only
-RDS publicly_accessible = false
-DB subnet group uses only private subnets
-Guardrail 5: Security group control
-DB port should not be open to 0.0.0.0/0.
-Only backend security group can access DB.
-Guardrail 6: WAF required
-Public ALB must have WAF attached.
-Guardrail 7: Monitoring required
-Prometheus/Grafana or CloudWatch monitoring must be enabled.
-Guardrail 8: HPA required
-Frontend/backend must have HPA enabled.
-Actual implementation order
+Allowed
 
-Do it in this order:
+```
+ap-south-1
+```
 
-Step 1: Create Terraform project structure
+Blocked
 
-Step 2: Create guardrails module
-        - SCP
-        - AWS Config rules
-        - Required tag rules
+```
+us-east-1
+```
 
-Step 3: Create VPC module
-        - VPC
-        - public/private subnets
-        - NAT
-        - route tables
-        - subnet tags
+---
 
-Step 4: Create EKS module
-        - EKS cluster
-        - node group
-        - IAM roles
-        - OIDC
+## Guardrail 2 - Mandatory Resource Tags
 
-Step 5: Create ECR module
-        - frontend image repo
-        - backend image repo
+Every resource must include:
 
-Step 6: Create RDS module
-        - private DB
-        - DB subnet group
-        - Secrets Manager
+```
+Environment
+Project
+Owner
+```
 
-Step 7: Install controllers using Helm
-        - AWS Load Balancer Controller
-        - metrics-server
+Deployment fails if tags are missing.
 
-Step 8: Create WAF module
-        - WAF Web ACL
-        - managed rules
-        - attach to ALB
+---
 
-Step 9: Deploy 3-tier app
-        - frontend
-        - backend Go API
-        - service
-        - ingress
-        - HPA
+## Guardrail 3 - Environment Subnet Validation
 
-Step 10: Install monitoring
-        - Prometheus
-        - Grafana
-        - dashboards
-        - alerts
+Development workloads can only use:
 
-Step 11: Test guardrails
-        - Try wrong region
-        - Try missing tags
-        - Try public DB
-        - Try wrong subnet
-        - Try no WAF
-What you should tell your sir
+```
+Environment = dev
+```
 
-Sir, I understood that we need to implement this task mainly through Terraform. Terraform will create the guardrails, VPC, subnets, EKS, IAM, WAF, RDS, monitoring setup, and autoscaling configuration. The 3-tier application will be deployed on EKS using Kubernetes/Helm. The main focus will be guardrails: approved region only, correct dev/prod subnet tags, required tags, private database, secure security groups, WAF attached to public traffic, monitoring enabled, and HPA enabled.
+Production workloads can only use:
 
-Simple final meaning:
+```
+Environment = prod
+```
 
-Terraform = create AWS infrastructure and guardrails
-Helm/Kubernetes = deploy app and monitoring inside EKS
-Guardrails = block or detect wrong configuration
-3-tier app = demo to prove guardrails are working
+---
+
+## Guardrail 4 - Private Database
+
+Amazon RDS:
+
+```
+publicly_accessible = false
+```
+
+Database is deployed only inside private subnets.
+
+---
+
+## Guardrail 5 - Database Security
+
+Database Security Group allows access only from:
+
+```
+Backend Security Group
+```
+
+No public access is allowed.
+
+Blocked:
+
+```
+0.0.0.0/0
+```
+
+---
+
+## Guardrail 6 - WAF Enforcement
+
+Every public Application Load Balancer must have:
+
+- AWS WAF
+- AWS Managed Rules
+
+---
+
+## Guardrail 7 - Monitoring Enforcement
+
+Infrastructure must include monitoring using:
+
+- Prometheus
+- Grafana
+
+or
+
+- Amazon CloudWatch
+
+---
+
+## Guardrail 8 - Horizontal Pod Autoscaler
+
+Both frontend and backend deployments must have HPA enabled.
+
+---
+
+# Deployment Order
+
+## Step 1
+
+Create Terraform project structure.
+
+---
+
+## Step 2
+
+Deploy Guardrails Module
+
+- SCP
+- AWS Config
+- Required Tags
+
+---
+
+## Step 3
+
+Deploy VPC
+
+- VPC
+- Subnets
+- NAT Gateway
+- Route Tables
+
+---
+
+## Step 4
+
+Deploy Amazon EKS
+
+- Cluster
+- Node Groups
+- IAM
+- OIDC
+
+---
+
+## Step 5
+
+Deploy Amazon ECR
+
+- Frontend Repository
+- Backend Repository
+
+---
+
+## Step 6
+
+Deploy Amazon RDS
+
+- Private Database
+- Secrets Manager
+
+---
+
+## Step 7
+
+Install Kubernetes Controllers
+
+- AWS Load Balancer Controller
+- Metrics Server
+
+---
+
+## Step 8
+
+Deploy AWS WAF
+
+- Web ACL
+- Managed Rules
+
+---
+
+## Step 9
+
+Deploy Three-Tier Application
+
+- Frontend
+- Backend
+- Services
+- Ingress
+- HPA
+
+---
+
+## Step 10
+
+Deploy Monitoring Stack
+
+- Prometheus
+- Grafana
+- Alertmanager
+- Dashboards
+
+---
+
+## Step 11
+
+Validate Guardrails
+
+Test scenarios:
+
+- Deploy in wrong AWS Region
+- Deploy without required tags
+- Create public RDS
+- Use incorrect subnet
+- Remove WAF
+- Disable HPA
+- Disable monitoring
+
+Expected Result:
+
+Terraform should prevent deployment or AWS Config should detect and report non-compliance.
+
+---
+
+# Deployment Commands
+
+Initialize Terraform
+
+```bash
+terraform init
+```
+
+Validate configuration
+
+```bash
+terraform validate
+```
+
+Check formatting
+
+```bash
+terraform fmt -recursive
+```
+
+Run TFLint
+
+```bash
+tflint
+```
+
+Run Security Scan
+
+```bash
+tfsec
+```
+
+or
+
+```bash
+checkov -d .
+```
+
+Review execution plan
+
+```bash
+terraform plan
+```
+
+Apply infrastructure
+
+```bash
+terraform apply
+```
+
+---
+
+# Future Enhancements
+
+- Multi-Region Disaster Recovery
+- AWS Control Tower Integration
+- GitOps with Argo CD
+- External Secrets Operator
+- AWS Backup Plans
+- Karpenter for Node Autoscaling
+- Kyverno / OPA Policy Enforcement
+- Service Mesh (Istio)
+
+---
+
+# Learning Outcomes
+
+After completing this project, you will understand:
+
+- Infrastructure as Code using Terraform
+- AWS Landing Zone concepts
+- Cloud Governance and Guardrails
+- Amazon EKS Architecture
+- Secure Networking
+- Kubernetes Deployments
+- AWS WAF
+- IAM Best Practices
+- Monitoring with Prometheus & Grafana
+- CI/CD Integration
+- Production-ready Infrastructure Design
+
+---
+
+# Project Summary
+
+This project demonstrates how to build a secure, production-ready AWS infrastructure using Terraform while enforcing governance through infrastructure guardrails. It provisions networking, Amazon EKS, Amazon ECR, private Amazon RDS, AWS WAF, monitoring, and autoscaling. The three-tier application is deployed on Kubernetes using Helm, showcasing best practices for security, scalability, observability, and infrastructure automation.
