@@ -10,6 +10,10 @@ module "vpc" {
 
   source = "../../modules/vpc"
 
+  depends_on = [
+    module.guardrails
+  ]
+
   project_name = var.project_name
 
   environment = var.environment
@@ -85,10 +89,9 @@ module "ec2" {
 
   private_subnet_ids = module.vpc.private_subnet_ids
 
-  master_sg     = module.security_groups.master_sg
-  worker_sg     = module.security_groups.worker_sg
-  monitoring_sg = module.security_groups.monitoring_sg
-
+  master_sg        = module.security_groups.master_sg
+  worker_sg        = module.security_groups.worker_sg
+  worker_user_data = local.worker_user_data
 }
 
 #===================ALB Module========================
@@ -132,13 +135,13 @@ module "monitoring" {
   environment  = var.environment
 
   instance_ids = [
-    module.ec2.master_id,
+    module.ec2.bastion_id,
     module.ec2.worker1_id,
     module.ec2.worker2_id
   ]
 
   instance_names = [
-    "master",
+    "bastion",
     "worker1",
     "worker2"
   ]

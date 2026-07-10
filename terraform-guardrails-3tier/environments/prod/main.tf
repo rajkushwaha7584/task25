@@ -2,9 +2,17 @@ data "aws_ssm_parameter" "amazon_linux_2023_ami" {
   name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 }
 
+locals {
+  worker_user_data = file("${path.module}/../../three-tier-app/deploy/user_data.sh.tftpl")
+}
+
 module "vpc" {
 
   source = "../../modules/vpc"
+
+  depends_on = [
+    module.guardrails
+  ]
 
   project_name = var.project_name
   environment  = var.environment
@@ -67,9 +75,9 @@ module "ec2" {
 
   private_subnet_ids = module.vpc.private_subnet_ids
 
-  master_sg     = module.security_groups.master_sg
-  worker_sg     = module.security_groups.worker_sg
-  monitoring_sg = module.security_groups.monitoring_sg
+  master_sg        = module.security_groups.master_sg
+  worker_sg        = module.security_groups.worker_sg
+  worker_user_data = local.worker_user_data
 }
 
 #===================ALB Module========================
@@ -88,6 +96,9 @@ module "alb" {
     module.ec2.worker1_id,
     module.ec2.worker2_id
   ]
+
+  target_port       = 8000
+  health_check_path = "/api/health"
 }
 
 #===================WAF Module========================
@@ -110,13 +121,13 @@ module "monitoring" {
   environment  = var.environment
 
   instance_ids = [
-    module.ec2.master_id,
+    module.ec2.bastion_id,
     module.ec2.worker1_id,
     module.ec2.worker2_id
   ]
 
   instance_names = [
-    "master",
+    "bastion",
     "worker1",
     "worker2"
   ]
