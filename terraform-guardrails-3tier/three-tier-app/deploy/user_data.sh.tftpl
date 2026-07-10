@@ -9,9 +9,10 @@ mkdir -p "$APP_DIR/data"
 cat > "$APP_DIR/app.py" <<'PY'
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
-import json, sqlite3, pathlib
+import json, sqlite3, pathlib, time, os
 
 DB = pathlib.Path("/opt/three-tier-app/data/app.db")
+START_TIME = time.time()
 HTML = b'''<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Three Tier App</title><style>body{font-family:Arial;margin:0;background:#eef2f6;color:#172033}.shell{max-width:1050px;margin:auto;padding:32px}.hero{display:flex;justify-content:space-between;gap:16px;align-items:end}h1{font-size:48px;margin:8px 0 28px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.panel{background:white;border:1px solid #d6dde8;border-radius:8px;padding:18px;min-height:360px}form{display:grid;grid-template-columns:1fr auto;gap:10px;margin:12px 0}input,select,button{height:40px;border-radius:7px;font:inherit}input,select{border:1px solid #cbd5e1;padding:0 10px}button{border:0;background:#2563eb;color:white;font-weight:700;padding:0 14px}.item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:9px;margin:8px 0}.done{text-decoration:line-through;color:#64748b}.del{background:#e11d48;width:34px}.ok{color:#166534;font-weight:700}@media(max-width:760px){.grid{grid-template-columns:1fr}h1{font-size:34px}}</style></head><body><main class=shell><div class=hero><div><p>Frontend + Backend + SQLite Database</p><h1>Todo and Skills Tracker</h1></div><span id=s class=ok>API Online</span></div><section class=grid><div class=panel><h2>To-do List</h2><form id=tf><input id=tt placeholder="Add a task"><button>Add</button></form><div id=tl></div></div><div class=panel><h2>Skills</h2><form id=sf><input id=sn placeholder="Add a skill"><select id=sl><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select><button>Add</button></form><div id=kl></div></div></section></main><script>async function api(p,o={}){let r=await fetch(p,{headers:{'Content-Type':'application/json'},...o});return r.json()}async function load(){let[t,k]=await Promise.all([api('/api/todos'),api('/api/skills')]);tl.innerHTML=t.map(x=>`<div class=item><input type=checkbox ${x.done?'checked':''} onchange="done(${x.id},this.checked)"><span class="${x.done?'done':''}">${x.title}</span><button class=del onclick="del('todos',${x.id})">x</button></div>`).join('');kl.innerHTML=k.map(x=>`<div class=item><span>Skill</span><span>${x.name} - ${x.level}</span><button class=del onclick="del('skills',${x.id})">x</button></div>`).join('')}tf.onsubmit=async e=>{e.preventDefault();await api('/api/todos',{method:'POST',body:JSON.stringify({title:tt.value})});tt.value='';load()};sf.onsubmit=async e=>{e.preventDefault();await api('/api/skills',{method:'POST',body:JSON.stringify({name:sn.value,level:sl.value})});sn.value='';load()};async function done(id,v){await api('/api/todos/'+id,{method:'PATCH',body:JSON.stringify({done:v})});load()}async function del(t,id){await api('/api/'+t+'/'+id,{method:'DELETE'});load()}load()</script></body></html>'''
 
 def db():
@@ -24,6 +25,35 @@ def init():
     with db() as c:
         c.executescript("CREATE TABLE IF NOT EXISTS todos(id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT NOT NULL,done INTEGER NOT NULL DEFAULT 0);CREATE TABLE IF NOT EXISTS skills(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,level TEXT NOT NULL DEFAULT 'Beginner');")
 
+def metrics():
+    with db() as c:
+        todos = c.execute("SELECT COUNT(*) FROM todos").fetchone()[0]
+        todos_done = c.execute("SELECT COUNT(*) FROM todos WHERE done=1").fetchone()[0]
+        skills = c.execute("SELECT COUNT(*) FROM skills").fetchone()[0]
+    load1 = os.getloadavg()[0]
+    uptime = int(time.time() - START_TIME)
+    return "\n".join([
+        "# HELP three_tier_app_up Application health status.",
+        "# TYPE three_tier_app_up gauge",
+        "three_tier_app_up 1",
+        "# HELP three_tier_app_todos_total Current number of todos.",
+        "# TYPE three_tier_app_todos_total gauge",
+        f"three_tier_app_todos_total {todos}",
+        "# HELP three_tier_app_todos_done_total Current number of completed todos.",
+        "# TYPE three_tier_app_todos_done_total gauge",
+        f"three_tier_app_todos_done_total {todos_done}",
+        "# HELP three_tier_app_skills_total Current number of skills.",
+        "# TYPE three_tier_app_skills_total gauge",
+        f"three_tier_app_skills_total {skills}",
+        "# HELP three_tier_app_process_uptime_seconds Application process uptime.",
+        "# TYPE three_tier_app_process_uptime_seconds gauge",
+        f"three_tier_app_process_uptime_seconds {uptime}",
+        "# HELP three_tier_app_host_load1 Host one minute load average.",
+        "# TYPE three_tier_app_host_load1 gauge",
+        f"three_tier_app_host_load1 {load1}",
+        ""
+    ]).encode()
+
 class H(BaseHTTPRequestHandler):
     def out(self, data, code=200):
         b = json.dumps(data).encode()
@@ -34,6 +64,9 @@ class H(BaseHTTPRequestHandler):
         p = urlparse(self.path).path
         if p == "/": self.send_response(200); self.send_header("Content-Type","text/html"); self.end_headers(); self.wfile.write(HTML); return
         if p == "/api/health": self.out({"status":"ok"}); return
+        if p == "/metrics":
+            b = metrics()
+            self.send_response(200); self.send_header("Content-Type","text/plain; version=0.0.4"); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b); return
         if p == "/api/todos":
             with db() as c: self.out([dict(r) for r in c.execute("SELECT id,title,done FROM todos ORDER BY id DESC")]); return
         if p == "/api/skills":

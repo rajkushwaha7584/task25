@@ -91,6 +91,7 @@ module "ec2" {
 
   master_sg        = module.security_groups.master_sg
   worker_sg        = module.security_groups.worker_sg
+  monitoring_sg    = module.security_groups.monitoring_sg
   worker_user_data = local.worker_user_data
 }
 
@@ -124,25 +125,4 @@ module "waf" {
   environment  = var.environment
 
   alb_arn = module.alb.alb_arn
-}
-
-#===================Monitoring Module========================
-module "monitoring" {
-
-  source = "../../modules/monitoring"
-
-  project_name = var.project_name
-  environment  = var.environment
-
-  instance_ids = [
-    module.ec2.bastion_id,
-    module.ec2.worker1_id,
-    module.ec2.worker2_id
-  ]
-
-  instance_names = [
-    "bastion",
-    "worker1",
-    "worker2"
-  ]
 }

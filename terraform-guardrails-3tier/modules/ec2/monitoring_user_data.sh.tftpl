@@ -1,0 +1,354 @@
+#!/bin/bash
+set -euo pipefail
+
+dnf update -y
+dnf install -y docker
+
+systemctl enable docker
+systemctl start docker
+
+MONITORING_DIR="/opt/monitoring"
+mkdir -p \
+  "$MONITORING_DIR/prometheus" \
+  "$MONITORING_DIR/grafana/provisioning/datasources" \
+  "$MONITORING_DIR/grafana/provisioning/dashboards" \
+  "$MONITORING_DIR/grafana/dashboards"
+
+cat > "$MONITORING_DIR/prometheus/prometheus.yml" <<'YAML'
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - prometheus:9090
+
+  - job_name: monitoring-node
+    static_configs:
+      - targets:
+          - node-exporter:9100
+
+  - job_name: three-tier-application
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - ${worker1_private_ip}:8000
+          - ${worker2_private_ip}:8000
+        labels:
+          project: ${project_name}
+          environment: ${environment}
+YAML
+
+cat > "$MONITORING_DIR/grafana/provisioning/datasources/prometheus.yml" <<'YAML'
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+YAML
+
+cat > "$MONITORING_DIR/grafana/provisioning/dashboards/project.yml" <<'YAML'
+apiVersion: 1
+
+providers:
+  - name: Three Tier Project
+    folder: Project Monitoring
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
+YAML
+
+cat > "$MONITORING_DIR/grafana/dashboards/project.json" <<'JSON'
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "sum(three_tier_app_todos_total)",
+          "refId": "A"
+        }
+      ],
+      "title": "Todos",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "sum(three_tier_app_todos_done_total)",
+          "refId": "A"
+        }
+      ],
+      "title": "Completed Todos",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum(three_tier_app_skills_total)",
+          "refId": "A"
+        }
+      ],
+      "title": "Skills",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum(three_tier_app_up)",
+          "refId": "A"
+        }
+      ],
+      "title": "Healthy App Targets",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "three_tier_app_process_uptime_seconds",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Application Uptime",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "three_tier_app_host_load1",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Worker Load Average",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 13
+      },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "refId": "A"
+        }
+      ],
+      "title": "Monitoring EC2 CPU",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 13
+      },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+          "refId": "A"
+        }
+      ],
+      "title": "Monitoring EC2 Memory",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "terraform",
+    "grafana",
+    "prometheus"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "Three Tier Project - Grafana Monitoring",
+  "uid": "three-tier-project-monitoring",
+  "version": 1
+}
+JSON
+
+docker network create monitoring || true
+docker volume create prometheus-data
+docker volume create grafana-data
+docker rm -f prometheus grafana node-exporter || true
+
+docker run -d \
+  --name prometheus \
+  --restart unless-stopped \
+  --network monitoring \
+  -p 9090:9090 \
+  -v "$MONITORING_DIR/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro" \
+  -v prometheus-data:/prometheus \
+  prom/prometheus:v2.55.1 \
+  --config.file=/etc/prometheus/prometheus.yml \
+  --storage.tsdb.path=/prometheus \
+  --web.enable-lifecycle
+
+docker run -d \
+  --name node-exporter \
+  --restart unless-stopped \
+  --network monitoring \
+  -p 9100:9100 \
+  -v /:/host:ro,rslave \
+  prom/node-exporter:v1.8.2 \
+  --path.rootfs=/host
+
+docker run -d \
+  --name grafana \
+  --restart unless-stopped \
+  --network monitoring \
+  -p 3000:3000 \
+  -e GF_SECURITY_ADMIN_USER=admin \
+  -e GF_SECURITY_ADMIN_PASSWORD=admin123 \
+  -e GF_USERS_ALLOW_SIGN_UP=false \
+  -v grafana-data:/var/lib/grafana \
+  -v "$MONITORING_DIR/grafana/provisioning:/etc/grafana/provisioning:ro" \
+  -v "$MONITORING_DIR/grafana/dashboards:/var/lib/grafana/dashboards:ro" \
+  grafana/grafana-oss:11.4.0

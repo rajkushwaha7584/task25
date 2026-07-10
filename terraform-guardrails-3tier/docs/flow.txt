@@ -26,3 +26,4 @@ All Pass     Any Fail
  ▼             ▼
 Create AWS   Stop with Error
 Resources
+ssh -i LLB-new-ap-south-1.pem ec2-user@65.2.182.179
