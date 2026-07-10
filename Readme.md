@@ -44,7 +44,9 @@ The infrastructure includes:
                                       │
                               Amazon RDS (Private)
 ```
+## Grafana Monitoring Dashboard
 
+![Grafana Dashboard](image.png)
 ---
 
 # Technology Stack
