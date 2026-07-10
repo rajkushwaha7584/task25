@@ -73,7 +73,7 @@ resource "aws_security_group" "master" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "10.0.0.0/16"
+      var.vpc_cidr
     ]
   }
 
@@ -84,7 +84,7 @@ resource "aws_security_group" "master" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "10.0.0.0/16"
+      var.vpc_cidr
     ]
   }
 
@@ -95,7 +95,7 @@ resource "aws_security_group" "master" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "10.0.0.0/16"
+      var.vpc_cidr
     ]
   }
 
@@ -132,7 +132,7 @@ resource "aws_security_group" "worker" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "10.0.0.0/16"
+      var.vpc_cidr
     ]
   }
 
@@ -143,7 +143,7 @@ resource "aws_security_group" "worker" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "10.0.0.0/16"
+      var.vpc_cidr
     ]
   }
 
@@ -154,8 +154,30 @@ resource "aws_security_group" "worker" {
     protocol  = "tcp"
 
     cidr_blocks = [
-      "10.0.0.0/16"
+      var.vpc_cidr
     ]
+  }
+
+  ingress {
+
+    from_port = 8000
+    to_port   = 8000
+    protocol  = "tcp"
+
+    security_groups = [
+      aws_security_group.alb.id
+    ]
+  }
+
+  ingress {
+
+    from_port = 8000
+    to_port   = 8000
+    protocol  = "tcp"
+
+    security_groups = var.enable_monitoring_scrape ? [
+      aws_security_group.monitoring.id
+    ] : []
   }
 
   ingress {
@@ -245,6 +267,17 @@ resource "aws_security_group" "monitoring" {
 
   ingress {
 
+    from_port = 22
+    to_port   = 22
+    protocol  = "tcp"
+
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
+  }
+
+  ingress {
+
     from_port = 3000
     to_port   = 3000
     protocol  = "tcp"
@@ -262,6 +295,17 @@ resource "aws_security_group" "monitoring" {
 
     cidr_blocks = [
       "0.0.0.0/0"
+    ]
+  }
+
+  ingress {
+
+    from_port = 9100
+    to_port   = 9100
+    protocol  = "tcp"
+
+    cidr_blocks = [
+      var.vpc_cidr
     ]
   }
 

@@ -37,3 +37,18 @@ variable "worker_sg" {
 variable "monitoring_sg" {
   type = string
 }
+
+variable "worker_user_data" {
+  type    = string
+  default = null
+}
+
+variable "monitoring_user_data" {
+  type    = string
+  default = null
+}
+
+variable "monitoring_instance_type" {
+  type    = string
+  default = "t3.micro"
+}
