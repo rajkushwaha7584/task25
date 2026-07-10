@@ -13,3 +13,8 @@ variable "vpc_id" {
 variable "vpc_cidr" {
   type = string
 }
+
+variable "enable_monitoring_scrape" {
+  type    = bool
+  default = true
+}

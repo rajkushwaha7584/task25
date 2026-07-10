@@ -171,6 +171,17 @@ resource "aws_security_group" "worker" {
 
   ingress {
 
+    from_port = 8000
+    to_port   = 8000
+    protocol  = "tcp"
+
+    security_groups = var.enable_monitoring_scrape ? [
+      aws_security_group.monitoring.id
+    ] : []
+  }
+
+  ingress {
+
     from_port = 80
     to_port   = 80
     protocol  = "tcp"
@@ -256,6 +267,17 @@ resource "aws_security_group" "monitoring" {
 
   ingress {
 
+    from_port = 22
+    to_port   = 22
+    protocol  = "tcp"
+
+    cidr_blocks = [
+      "0.0.0.0/0"
+    ]
+  }
+
+  ingress {
+
     from_port = 3000
     to_port   = 3000
     protocol  = "tcp"
@@ -273,6 +295,17 @@ resource "aws_security_group" "monitoring" {
 
     cidr_blocks = [
       "0.0.0.0/0"
+    ]
+  }
+
+  ingress {
+
+    from_port = 9100
+    to_port   = 9100
+    protocol  = "tcp"
+
+    cidr_blocks = [
+      var.vpc_cidr
     ]
   }
 
